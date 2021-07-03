@@ -9,6 +9,15 @@ window.onload = () => {
         type: Two.Types.svg
     }).appendTo(elem);
 
+    // canvas variables
+    const canvas = document.getElementById("canvas");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext("2d");
+    pixelSize = 2;
+    let canvasXOffset = -1.5;
+    let canvasYOffset = -1.5;
+
     // frequency: 200, 201. amplitude: 100, 0.
     // frequency: 200, 300. amplitude: 0, -360.
     // frequency: 200, 250. amplitude: 0, -360.
@@ -33,18 +42,19 @@ window.onload = () => {
     let xPhase0 = 0;
     let xPhase1 = 0;
     //offsets
-    let xOffset = 610;
-    let yOffset = 370;
+    let xOffset = window.innerWidth / 2;
+    let yOffset = window.innerHeight / 2;
 
     let points = [];
 
     let slow = true;
     let reverse = false;
     let headstart = 29000;
+    let end = 30000
 
     two.update(); // this initial 'update' creates SVG '_renderer' properties for our shapes that we can add action listeners to, so it needs to go here
 
-    while (count < 30000) {
+    while (count < end) {
         count += 1;
         x0 += 1;
         x1 += 1;
@@ -65,23 +75,21 @@ window.onload = () => {
         points.reverse();
     }
 
-    // axes
-    xAxis = two.makePath([anchor(xOffset, 0), anchor(xOffset, 5000)], false);
-    xAxis.stroke = 'red';
-    yAxis = two.makePath([anchor(0, yOffset), anchor(5000, yOffset)], false);
-    yAxis.stroke = 'red';
+    count = 0;
 
-    actualPoints = [];
+    // draw axes
+    ctx.fillStyle = "#FF0000";
+    ctx.fillRect(xOffset + canvasXOffset , 0, 1, 10000);
+    ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
+    ctx.fillRect(xOffset + canvasXOffset , 0, 1, 10000);
+    ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
+    ctx.fillStyle = "#000000";
 
-    for (let index = 0; index < points.length; index++) {
-        actualPoints.push(drawPixel(points[index], 'transparent'));
+    while (count < headstart) {
+        point = points[count];
+        ctx.fillRect(point.x + canvasXOffset, point.y + canvasYOffset, pixelSize, pixelSize);
+        count += 1;
     }
-
-    for (let index = 0; index < headstart; index++) {
-        actualPoints[index].fill = 'black';
-    }
-
-    count = headstart;
 
     // tracking lines
     xLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
@@ -106,10 +114,11 @@ window.onload = () => {
     // The recursive 'update' loop that runs everything 
     function update() {
 
-        if (slow) {
+        if (slow && count < points.length) {
             // draw point
             point = points[count];
-            actualPoints[count].fill = 'black';
+            // actualPoints[count].fill = 'black';
+            ctx.fillRect(point.x + canvasXOffset, point.y + canvasYOffset, pixelSize, pixelSize);
             // draw tracking points
             xPoint.translation.set(point.x, yOffset);
             yPoint.translation.set(xOffset, point.y);
@@ -128,9 +137,15 @@ window.onload = () => {
 
             count += 1;
         }
+        
         if (!slow || count >= points.length) {
-            xAxis.stroke = 'transparent';
-            yAxis.stroke = 'transparent';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            count = 0
+            while (count < end) {
+                point = points[count];
+                ctx.fillRect(point.x + canvasXOffset, point.y + canvasYOffset, pixelSize, pixelSize);
+                count += 1;
+            }
             xLine.stroke = 'transparent';
             yLine.stroke = 'transparent';
             xPoint.fill = 'transparent';
