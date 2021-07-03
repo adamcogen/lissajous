@@ -25,20 +25,42 @@ window.onload = () => {
     let y1 = 0;
     // period
     let frequency0 = 200;
-    let frequency1 = 201;
+    let frequency1 = 250;
     // amplitude
-    let amplitude0 = 100;
-    let amplitude1 = 0;
+    let amplitude0 = 0;
+    let amplitude1 = -360;
     //phase
     let xPhase0 = 0;
     let xPhase1 = 0;
+    //offsets
+    let xOffset = 610;
+    let yOffset = 370;
 
     let points = [];
 
-    let slow = false;
+    let slow = true;
     let reverse = false;
+    let headstart = 20000;
 
     two.update(); // this initial 'update' creates SVG '_renderer' properties for our shapes that we can add action listeners to, so it needs to go here
+
+    // axes
+    xAxis = two.makePath([anchor(xOffset, 0), anchor(xOffset, 5000)], false);
+    xAxis.stroke = 'red';
+    yAxis = two.makePath([anchor(0, yOffset), anchor(5000, yOffset)], false);
+    yAxis.stroke = 'red';
+    // tracking lines
+    xLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
+    yLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
+    xLine.stroke = 'blue';
+    yLine.stroke = 'blue';
+    xLine.linewidth = 1;
+    yLine.linewidth = 1;
+    // tracking points
+    xPoint = drawPixel({x: xOffset, y: yOffset}, 'red');
+    yPoint = drawPixel({x: xOffset, y: yOffset}, 'red');
+    xPoint.radius = 4;
+    yPoint.radius = 4;
 
     while (count < 30000) {
         count += 1;
@@ -54,7 +76,7 @@ window.onload = () => {
         amplitude0 += .01;
         amplitude1 += .01;
 
-        points.push({x: y0 + 600, y: y1 + 370})
+        points.push({x: y0 + xOffset, y: y1 + yOffset})
     }
 
     if (reverse) {
@@ -65,15 +87,36 @@ window.onload = () => {
         for (let index = 0; index < points.length; index++) {
             drawPixel(points[index]);
         }
+    } else {
+        for (let index = 0; index < headstart; index++) {
+            drawPixel(points[index]);
+        }
     }
 
-    count = 0;
+    count = headstart;
 
     // The recursive 'update' loop that runs everything 
     function update() {
 
         if (slow) {
-            drawPixel(points[count]);
+            // draw point
+            point = points[count];
+            drawPixel(point);
+            // draw tracking points
+            xPoint.translation.set(point.x, yOffset);
+            yPoint.translation.set(xOffset, point.y);
+            // draw tracking lines
+            // x line
+            xLine.vertices[0].x = xPoint.translation.x  - xLine.translation.x;
+            xLine.vertices[0].y = xPoint.translation.y  - xLine.translation.y;
+            xLine.vertices[1].x = point.x - xLine.translation.x;
+            xLine.vertices[1].y = point.y - xLine.translation.y;
+            // y line
+            yLine.vertices[0].x = yPoint.translation.x - yLine.translation.x;
+            yLine.vertices[0].y = yPoint.translation.y - yLine.translation.y;
+            yLine.vertices[1].x = point.x - yLine.translation.x;
+            yLine.vertices[1].y = point.y - yLine.translation.y;
+
             count += 1;
         }
 
@@ -90,6 +133,10 @@ window.onload = () => {
         circle.fill = color;
         circle.stroke = color;
         return circle;
+    }
+
+    function anchor(x, y) {
+        return new Two.Anchor(x, y);
     }
 
     // Generate a random hex color that can be used for CSS
