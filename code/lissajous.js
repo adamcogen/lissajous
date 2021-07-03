@@ -40,27 +40,9 @@ window.onload = () => {
 
     let slow = true;
     let reverse = false;
-    let headstart = 20000;
+    let headstart = 29000;
 
     two.update(); // this initial 'update' creates SVG '_renderer' properties for our shapes that we can add action listeners to, so it needs to go here
-
-    // axes
-    xAxis = two.makePath([anchor(xOffset, 0), anchor(xOffset, 5000)], false);
-    xAxis.stroke = 'red';
-    yAxis = two.makePath([anchor(0, yOffset), anchor(5000, yOffset)], false);
-    yAxis.stroke = 'red';
-    // tracking lines
-    xLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
-    yLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
-    xLine.stroke = 'blue';
-    yLine.stroke = 'blue';
-    xLine.linewidth = 1;
-    yLine.linewidth = 1;
-    // tracking points
-    xPoint = drawPixel({x: xOffset, y: yOffset}, 'red');
-    yPoint = drawPixel({x: xOffset, y: yOffset}, 'red');
-    xPoint.radius = 4;
-    yPoint.radius = 4;
 
     while (count < 30000) {
         count += 1;
@@ -83,17 +65,43 @@ window.onload = () => {
         points.reverse();
     }
 
-    if (!slow) {
-        for (let index = 0; index < points.length; index++) {
-            drawPixel(points[index]);
-        }
-    } else {
-        for (let index = 0; index < headstart; index++) {
-            drawPixel(points[index]);
-        }
+    // axes
+    xAxis = two.makePath([anchor(xOffset, 0), anchor(xOffset, 5000)], false);
+    xAxis.stroke = 'red';
+    yAxis = two.makePath([anchor(0, yOffset), anchor(5000, yOffset)], false);
+    yAxis.stroke = 'red';
+
+    actualPoints = [];
+
+    for (let index = 0; index < points.length; index++) {
+        actualPoints.push(drawPixel(points[index], 'transparent'));
+    }
+
+    for (let index = 0; index < headstart; index++) {
+        actualPoints[index].fill = 'black';
     }
 
     count = headstart;
+
+    // tracking lines
+    xLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
+    yLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
+    xLine.stroke = 'blue';
+    yLine.stroke = 'blue';
+    xLine.linewidth = 1;
+    yLine.linewidth = 1;
+    // tracking points
+    xPoint = drawPixel({x: xOffset, y: yOffset}, 'red');
+    yPoint = drawPixel({x: xOffset, y: yOffset}, 'red');
+    xPoint.radius = 4;
+    yPoint.radius = 4;
+    xPoint.linewidth = 1;
+    yPoint.linewidth = 1;
+    xPoint.stroke = 'black';
+    yPoint.stroke = 'black';
+    // tracking new dot
+    trackingDot = drawPixel({x: xOffset, y: yOffset}, 'black');
+    trackingDot.radius = 1;
 
     // The recursive 'update' loop that runs everything 
     function update() {
@@ -101,10 +109,11 @@ window.onload = () => {
         if (slow) {
             // draw point
             point = points[count];
-            drawPixel(point);
+            actualPoints[count].fill = 'black';
             // draw tracking points
             xPoint.translation.set(point.x, yOffset);
             yPoint.translation.set(xOffset, point.y);
+            trackingDot.translation.set(point.x, point.y);
             // draw tracking lines
             // x line
             xLine.vertices[0].x = xPoint.translation.x  - xLine.translation.x;
@@ -118,6 +127,17 @@ window.onload = () => {
             yLine.vertices[1].y = point.y - yLine.translation.y;
 
             count += 1;
+        }
+        if (!slow || count >= points.length) {
+            xAxis.stroke = 'transparent';
+            yAxis.stroke = 'transparent';
+            xLine.stroke = 'transparent';
+            yLine.stroke = 'transparent';
+            xPoint.fill = 'transparent';
+            xPoint.stroke = 'transparent';
+            yPoint.fill = 'transparent';
+            yPoint.stroke = 'transparent';
+            trackingDot.fill = 'transparent';
         }
 
         two.update();
