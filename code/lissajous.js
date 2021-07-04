@@ -53,8 +53,8 @@ window.onload = () => {
 
     let slow = true;
     let reverse = false;
-    let headstart = 20000;
-    let end = 22000;
+    let headstart = 19000;
+    let end = 200000;
 
     // apply universal scale multiplier
     frequency0 *= scale_multiplier
@@ -160,8 +160,8 @@ window.onload = () => {
             lastMilliDrawTime = Date.now();
         }
         
+        // redraw everything at the end, without the red axes or animated tracking shapes
         if (!slow || count >= points.length) {
-            clearCanvas(ctx);
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
             count = 0
