@@ -33,10 +33,10 @@ window.onload = () => {
     let showAxes = true;
     let showTrackingAnimations = false;
 
-    let exportPngAndConfigJson = true;
+    let exportPngAndConfigJson = false;
     let exported = false;
 
-    let useJsonTextConfig = true; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
+    let useJsonTextConfig = false; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
 
     let importConfigJson = false; // if true, import configuration from a saved JSON file. this is untested but should only work if this is being run from a web server due to http security limitations with most browsers.
     let configJsonFileName = "./configurations/1.json"
@@ -46,19 +46,19 @@ window.onload = () => {
         equations: {
             x: {
                 period: 200,
-                amplitude: 100,
+                amplitude: -360,
                 phase: 0,
             },
             y: {
-                period: 201,
-                amplitude: 0,
+                period: 250,
+                amplitude: 100,
                 phase: 0,
             }
         },
         automation: {
             x: {
                 amplitude: {
-                    add: .01,
+                    add: .0023,
                     multiply: 1,
                 },
                 period: {
@@ -72,7 +72,7 @@ window.onload = () => {
             },
             y: {
                 amplitude: {
-                    add: .01,
+                    add: .005,
                     multiply: 1,
                 },
                 period: {
@@ -85,10 +85,10 @@ window.onload = () => {
                 }
             }
         },
-        slow: false,
+        slow: true,
         reverse: false,
-        headstart: 100000,
-        end: 100000,
+        headstart: 140000,
+        end: 150000,
         scaleMultiplier: 2,
     };
 
