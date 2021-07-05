@@ -28,34 +28,37 @@ window.onload = () => {
     let lastMilliDrawTime = 0;
     let currentMilliTime = 0;
     let millisElapsed = 0;
-    const MILLI_TIME_BETWEEN_POINTS = 0;
+    const MILLI_TIME_BETWEEN_POINTS = 0; // slow down how long we should wait between each point being drawn.
 
     let showAxes = true;
     let showTrackingAnimations = false;
 
-    let exportPngAndConfigJson = false;
+    let exportPngAndConfigJson = true;
     let exported = false;
 
-    let importConfigJson = false;
+    let useJsonTextConfig = true; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
+
+    let importConfigJson = false; // if true, import configuration from a saved JSON file. this is untested but should only work if this is being run from a web server due to http security limitations with most browsers.
     let configJsonFileName = "./configurations/1.json"
 
+    // use this 'configuration' object declaration if 'useJsonTextConfig' and 'importConfigJson' are set to false
     let configuration = {
         equations: {
             x: {
                 period: 200,
-                amplitude: -360,
+                amplitude: 100,
                 phase: 0,
             },
             y: {
-                period: 250,
-                amplitude: 100,
+                period: 201,
+                amplitude: 0,
                 phase: 0,
             }
         },
         automation: {
             x: {
                 amplitude: {
-                    add: .0023,
+                    add: .01,
                     multiply: 1,
                 },
                 period: {
@@ -69,7 +72,7 @@ window.onload = () => {
             },
             y: {
                 amplitude: {
-                    add: .005,
+                    add: .01,
                     multiply: 1,
                 },
                 period: {
@@ -82,14 +85,18 @@ window.onload = () => {
                 }
             }
         },
-        slow: true,
+        slow: false,
         reverse: false,
-        headstart: 115000,
-        end: 120000,
+        headstart: 100000,
+        end: 100000,
         scaleMultiplier: 2,
     };
 
-    if (importConfigJson) {
+    if (useJsonTextConfig) { // use this 'configuration' JSON declaration if 'useJsonTextConfig' is set to true and 'importConfigJson' is set to false
+        configuration = JSON.parse('{"equations":{"x":{"period":200,"amplitude":-360,"phase":0},"y":{"period":250,"amplitude":100,"phase":0}},"automation":{"x":{"amplitude":{"add":0.0023,"multiply":1},"period":{"add":0,"multiply":1},"phase":{"add":0,"multiply":1}},"y":{"amplitude":{"add":0.005,"multiply":1},"period":{"add":0,"multiply":1},"phase":{"add":0,"multiply":1}}},"slow":false,"reverse":false,"headstart":119000,"end":120000,"scaleMultiplier":2}');
+    }
+
+    if (importConfigJson) { // use this 'configuration' declaration to import from a JSON file if 'importConfigJson' is set to true
         configuration = loadJsonFile(configJsonFileName);
     }
 
@@ -191,13 +198,15 @@ window.onload = () => {
                 drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
                 count += 1;
             }
-            xLine.stroke = 'transparent';
-            yLine.stroke = 'transparent';
-            xPoint.fill = 'transparent';
-            xPoint.stroke = 'transparent';
-            yPoint.fill = 'transparent';
-            yPoint.stroke = 'transparent';
-            trackingDot.fill = 'transparent';
+            if (showTrackingAnimations) {
+                xLine.stroke = 'transparent';
+                yLine.stroke = 'transparent';
+                xPoint.fill = 'transparent';
+                xPoint.stroke = 'transparent';
+                yPoint.fill = 'transparent';
+                yPoint.stroke = 'transparent';
+                trackingDot.fill = 'transparent';
+            }
 
             if (exportPngAndConfigJson && !exported) {
                 exported = true;
@@ -261,6 +270,7 @@ window.onload = () => {
     function exportConfigurationAsJson(configuration) {
         let filename = 'configuration.json';
         let jsonStr = JSON.stringify(configuration);
+        // let jsonStr = JSON.stringify(configuration, undefined, 4); // this version has line breaks and indentation
 
         let element = document.createElement('a');
         element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonStr));
