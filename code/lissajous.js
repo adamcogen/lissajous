@@ -30,6 +30,9 @@ window.onload = () => {
     let millisElapsed = 0;
     const MILLI_TIME_BETWEEN_POINTS = 0;
 
+    let showAxes = true;
+    let showTrackingAnimations = false;
+
     let exportPngAndConfigJson = false;
     let exported = false;
 
@@ -108,12 +111,14 @@ window.onload = () => {
     drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
 
     // draw axes
-    ctx.fillStyle = "#FF0000";
-    ctx.fillRect(xOffset + canvasXOffset , 0, 1, 10000);
-    ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
-    ctx.fillRect(xOffset + canvasXOffset , 0, 1, 10000);
-    ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
-    ctx.fillStyle = "#000000";
+    if (showAxes) {
+        ctx.fillStyle = "#FF0000";
+        ctx.fillRect(xOffset + canvasXOffset , 0, 1, 10000);
+        ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
+        ctx.fillRect(xOffset + canvasXOffset , 0, 1, 10000);
+        ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
+        ctx.fillStyle = "#000000";
+    }
 
     while (count < configuration.headstart) {
         point = points[count];
@@ -122,24 +127,26 @@ window.onload = () => {
     }
 
     // tracking lines
-    xLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
-    yLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
-    xLine.stroke = 'blue';
-    yLine.stroke = 'blue';
-    xLine.linewidth = 1;
-    yLine.linewidth = 1;
-    // tracking points
-    xPoint = drawSvgPixel({x: xOffset, y: yOffset}, 'red');
-    yPoint = drawSvgPixel({x: xOffset, y: yOffset}, 'red');
-    xPoint.radius = 4;
-    yPoint.radius = 4;
-    xPoint.linewidth = 1;
-    yPoint.linewidth = 1;
-    xPoint.stroke = 'black';
-    yPoint.stroke = 'black';
-    // tracking new dot
-    trackingDot = drawSvgPixel({x: xOffset, y: yOffset}, 'black');
-    trackingDot.radius = pixelSize / 2;
+    if (showTrackingAnimations) {
+        xLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
+        yLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
+        xLine.stroke = 'blue';
+        yLine.stroke = 'blue';
+        xLine.linewidth = 1;
+        yLine.linewidth = 1;
+        // tracking points
+        xPoint = drawSvgPixel({x: xOffset, y: yOffset}, 'red');
+        yPoint = drawSvgPixel({x: xOffset, y: yOffset}, 'red');
+        xPoint.radius = 4;
+        yPoint.radius = 4;
+        xPoint.linewidth = 1;
+        yPoint.linewidth = 1;
+        xPoint.stroke = 'black';
+        yPoint.stroke = 'black';
+        // tracking new dot
+        trackingDot = drawSvgPixel({x: xOffset, y: yOffset}, 'black');
+        trackingDot.radius = pixelSize / 2;
+    }
 
     // The recursive 'update' loop that runs everything 
     function update() {
@@ -152,20 +159,22 @@ window.onload = () => {
             point = points[count];
             drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
             // draw tracking points
-            xPoint.translation.set(point.x, yOffset);
-            yPoint.translation.set(xOffset, point.y);
-            trackingDot.translation.set(point.x, point.y);
-            // draw tracking lines
-            // x line
-            xLine.vertices[0].x = xPoint.translation.x  - xLine.translation.x;
-            xLine.vertices[0].y = xPoint.translation.y  - xLine.translation.y;
-            xLine.vertices[1].x = point.x - xLine.translation.x;
-            xLine.vertices[1].y = point.y - xLine.translation.y;
-            // y line
-            yLine.vertices[0].x = yPoint.translation.x - yLine.translation.x;
-            yLine.vertices[0].y = yPoint.translation.y - yLine.translation.y;
-            yLine.vertices[1].x = point.x - yLine.translation.x;
-            yLine.vertices[1].y = point.y - yLine.translation.y;
+            if (showTrackingAnimations) {
+                xPoint.translation.set(point.x, yOffset);
+                yPoint.translation.set(xOffset, point.y);
+                trackingDot.translation.set(point.x, point.y);
+                // draw tracking lines
+                // x line
+                xLine.vertices[0].x = xPoint.translation.x  - xLine.translation.x;
+                xLine.vertices[0].y = xPoint.translation.y  - xLine.translation.y;
+                xLine.vertices[1].x = point.x - xLine.translation.x;
+                xLine.vertices[1].y = point.y - xLine.translation.y;
+                // y line
+                yLine.vertices[0].x = yPoint.translation.x - yLine.translation.x;
+                yLine.vertices[0].y = yPoint.translation.y - yLine.translation.y;
+                yLine.vertices[1].x = point.x - yLine.translation.x;
+                yLine.vertices[1].y = point.y - yLine.translation.y;
+            }
 
             count += 1;
 
