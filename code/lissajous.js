@@ -15,52 +15,14 @@ window.onload = () => {
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext("2d");
     pixelSize = 3;
-    let canvasXOffset = -3;
-    let canvasYOffset = -3;
+    let canvasXOffset = -1.5;
+    let canvasYOffset = -1.5;
 
-    const BACKGROUND_COLOR = "#FFFFFF"
-
-    // frequency: 200, 201. amplitude: 100, 0.
-    // frequency: 200, 300. amplitude: 0, -360.
-    // frequency: 200, 250. amplitude: 0, -360.
-    // frequency: 270, 630. amplitude: 0, -360.
-    // frequency: 210, 350. amplitude: 0, -360.
-
-    // math variables
-    let count = 0;
-    // x
-    let x0 = 0;
-    let x1 = 0;
-    // y
-    let y0 = 0;
-    let y1 = 0;
-    // period
-    let frequency0 = 200;
-    let frequency1 = 201;
-    // amplitude
-    let amplitude0 = -170;
-    let amplitude1 = -170;
-    //phase
-    let xPhase0 = 0;
-    let xPhase1 = 0;
     //offsets
     let xOffset = window.innerWidth / 2;
     let yOffset = window.innerHeight / 2;
-    // universal scale multiplier
-    let scale_multiplier = 2;
 
-    let points = [];
-
-    let slow = true;
-    let reverse = false;
-    let headstart = 19000;
-    let end = 200000;
-
-    // apply universal scale multiplier
-    frequency0 *= scale_multiplier
-    frequency1 *= scale_multiplier
-    amplitude0 *= scale_multiplier
-    amplitude1 *= scale_multiplier
+    const BACKGROUND_COLOR = "#FFFFFF"
 
     //timing variables
     let lastMilliDrawTime = 0;
@@ -68,30 +30,80 @@ window.onload = () => {
     let millisElapsed = 0;
     const MILLI_TIME_BETWEEN_POINTS = 0;
 
-    two.update(); // this initial 'update' creates SVG '_renderer' properties for our shapes that we can add action listeners to, so it needs to go here
+    let exportPngAndConfigJson = false;
+    let exported = false;
 
-    while (count < end) {
-        count += 1;
-        x0 += 1;
-        x1 += 1;
+    let importConfigJson = false;
+    let configJsonFileName = "./configurations/1.json"
 
-        let b0 = (2 * Math.PI) / frequency0
-        y0 = amplitude0 * Math.sin(b0 * (x0 + xPhase0));
+    let configuration = {
+        equations: {
+            x: {
+                period: 200,
+                amplitude: -360,
+                phase: 0,
+            },
+            y: {
+                period: 250,
+                amplitude: 100,
+                phase: 0,
+            }
+        },
+        automation: {
+            x: {
+                amplitude: {
+                    add: .0023,
+                    multiply: 1,
+                },
+                period: {
+                    add: 0,
+                    multiply: 1,
+                },
+                phase: {
+                    add: 0,
+                    multiply: 1,
+                }
+            },
+            y: {
+                amplitude: {
+                    add: .005,
+                    multiply: 1,
+                },
+                period: {
+                    add: 0,
+                    multiply: 1,
+                },
+                phase: {
+                    add: 0,
+                    multiply: 1,
+                }
+            }
+        },
+        slow: true,
+        reverse: false,
+        headstart: 115000,
+        end: 120000,
+        scaleMultiplier: 2,
+    };
 
-        let b1 = (2 * Math.PI) / frequency1
-        y1 = amplitude1 * Math.sin(b1 * (x1 + xPhase1));
-
-        amplitude0 += .03;
-        amplitude1 += .03;
-
-        points.push({x: y0 + xOffset, y: y1 + yOffset, color: "#000000"})
+    if (importConfigJson) {
+        configuration = loadJsonFile(configJsonFileName);
     }
 
-    if (reverse) {
-        points.reverse();
+    if (exportPngAndConfigJson) {
+        exportConfigurationAsJson(configuration)
     }
 
-    count = 0;
+    // frequency: 200, 201. amplitude: 100, 0.
+    // frequency: 200, 300. amplitude: 0, -360.
+    // frequency: 200, 250. amplitude: 0, -360.
+    // frequency: 270, 630. amplitude: 0, -360.
+    // frequency: 210, 350. amplitude: 0, -360.
+
+    let points = [];
+    points = calculatePoints(configuration, xOffset, yOffset);
+
+    let count = 0;
 
     drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
 
@@ -103,7 +115,7 @@ window.onload = () => {
     ctx.fillRect(0 , yOffset + canvasYOffset, 10000, 1);
     ctx.fillStyle = "#000000";
 
-    while (count < headstart) {
+    while (count < configuration.headstart) {
         point = points[count];
         drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
         count += 1;
@@ -114,8 +126,8 @@ window.onload = () => {
     yLine = two.makePath([anchor(xOffset, yOffset), anchor(xOffset, yOffset)]);
     xLine.stroke = 'blue';
     yLine.stroke = 'blue';
-    xLine.linewidth = 1 * scale_multiplier;
-    yLine.linewidth = 1 * scale_multiplier;
+    xLine.linewidth = 1;
+    yLine.linewidth = 1;
     // tracking points
     xPoint = drawSvgPixel({x: xOffset, y: yOffset}, 'red');
     yPoint = drawSvgPixel({x: xOffset, y: yOffset}, 'red');
@@ -127,7 +139,7 @@ window.onload = () => {
     yPoint.stroke = 'black';
     // tracking new dot
     trackingDot = drawSvgPixel({x: xOffset, y: yOffset}, 'black');
-    trackingDot.radius = pixelSize;
+    trackingDot.radius = pixelSize / 2;
 
     // The recursive 'update' loop that runs everything 
     function update() {
@@ -135,7 +147,7 @@ window.onload = () => {
         currentMilliTime = Date.now();
         millisElapsed = currentMilliTime - lastMilliDrawTime;
 
-        if (slow && count < points.length && millisElapsed >= MILLI_TIME_BETWEEN_POINTS) {
+        if (configuration.slow && count < points.length && millisElapsed >= MILLI_TIME_BETWEEN_POINTS) {
             // draw point
             point = points[count];
             drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
@@ -161,11 +173,11 @@ window.onload = () => {
         }
         
         // redraw everything at the end, without the red axes or animated tracking shapes
-        if (!slow || count >= points.length) {
+        if (!configuration.slow || count >= points.length) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
             count = 0
-            while (count < end) {
+            while (count < configuration.end) {
                 point = points[count];
                 drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
                 count += 1;
@@ -177,6 +189,11 @@ window.onload = () => {
             yPoint.fill = 'transparent';
             yPoint.stroke = 'transparent';
             trackingDot.fill = 'transparent';
+
+            if (exportPngAndConfigJson && !exported) {
+                exported = true;
+                exportCanvasAsPNG(canvas, "lissajous")
+            }
         }
 
         two.update();
@@ -212,5 +229,103 @@ window.onload = () => {
     // Generate a random hex color that can be used for CSS
     function randomColor () {
         return '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6);
+    }
+
+    // https://stackoverflow.com/questions/923885/capture-html-canvas-as-gif-jpg-png-pdf
+    function exportCanvasAsPNG(canvas, fileName) {
+    
+        var MIME_TYPE = "image/png";
+    
+        var imgURL = canvas.toDataURL(MIME_TYPE);
+    
+        var dlLink = document.createElement('a');
+        dlLink.download = fileName;
+        dlLink.href = imgURL;
+        dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
+    
+        document.body.appendChild(dlLink);
+        dlLink.click();
+        document.body.removeChild(dlLink);
+    }
+
+    // https://stackoverflow.com/questions/33780271/export-a-json-object-to-a-text-file
+    function exportConfigurationAsJson(configuration) {
+        let filename = 'configuration.json';
+        let jsonStr = JSON.stringify(configuration);
+
+        let element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonStr));
+        element.setAttribute('download', filename);
+
+        element.style.display = 'none';
+        document.body.appendChild(element);
+
+        element.click();
+
+        document.body.removeChild(element);
+    }
+
+    // https://stackoverflow.com/questions/7346563/loading-local-json-file
+    function loadJsonFile(filePath) {
+        let json = $.getJSON(filePath, function(response) {
+            console.log(response);
+        });
+        return JSON.parse(json.responseText);
+    }
+
+    function calculatePoints(configuration, xOffset, yOffset) {
+        // math variables
+        let count = 0;
+        // x
+        let x0 = 0;
+        let x1 = 0;
+        // y
+        let y0 = 0;
+        let y1 = 0;
+
+        let points = [];
+
+        // apply universal scale multiplier
+        configuration.equations.x.period *= configuration.scaleMultiplier
+        configuration.equations.y.period *= configuration.scaleMultiplier
+        configuration.equations.x.amplitude *= configuration.scaleMultiplier
+        configuration.equations.y.amplitude *= configuration.scaleMultiplier
+
+        while (count < configuration.end) {
+            count += 1;
+            x0 += 1;
+            x1 += 1;
+
+            let b0 = (2 * Math.PI) / configuration.equations.x.period
+            y0 = configuration.equations.x.amplitude * Math.sin(b0 * (x0 + configuration.equations.x.phase));
+
+            let b1 = (2 * Math.PI) / configuration.equations.y.period
+            y1 = configuration.equations.y.amplitude * Math.sin(b1 * (x1 + configuration.equations.y.phase));
+
+            // apply automation
+            // amplitude
+            configuration.equations.x.amplitude += configuration.automation.x.amplitude.add;
+            configuration.equations.y.amplitude += configuration.automation.y.amplitude.add;
+            configuration.equations.x.amplitude *= configuration.automation.x.amplitude.multiply;
+            configuration.equations.y.amplitude *= configuration.automation.y.amplitude.multiply;
+            // period
+            configuration.equations.x.period += configuration.automation.x.period.add;
+            configuration.equations.y.period += configuration.automation.y.period.add;
+            configuration.equations.x.period *= configuration.automation.x.period.multiply;
+            configuration.equations.y.period *= configuration.automation.y.period.multiply;
+            //phase
+            configuration.equations.x.phase += configuration.automation.x.phase.add;
+            configuration.equations.y.phase += configuration.automation.y.phase.add;
+            configuration.equations.x.phase *= configuration.automation.x.phase.multiply;
+            configuration.equations.y.phase *= configuration.automation.y.phase.multiply;
+
+            points.push({x: y0 + xOffset, y: y1 + yOffset, color: "#000000"})
+        }
+
+        if (configuration.reverse) {
+            points.reverse();
+        }
+
+        return points;
     }
 }
