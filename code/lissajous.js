@@ -36,7 +36,7 @@ window.onload = () => {
     let exportPngAndConfigJson = false;
     let exported = false;
 
-    let useJsonTextConfig = false; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
+    let useJsonTextConfig = true; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
 
     let importConfigJson = false; // if true, import configuration from a saved JSON file. this is untested but should only work if this is being run from a web server due to http security limitations with most browsers.
     let configJsonFileName = "./configurations/1.json"
@@ -45,20 +45,20 @@ window.onload = () => {
     let configuration = {
         equations: {
             x: {
-                period: 200,
-                amplitude: -360,
+                period: 300,
+                amplitude: 200,
                 phase: 0,
             },
             y: {
-                period: 250,
-                amplitude: 100,
+                period: 400,
+                amplitude: 200,
                 phase: 0,
             }
         },
         automation: {
             x: {
                 amplitude: {
-                    add: .0023,
+                    add: 0,
                     multiply: 1,
                 },
                 period: {
@@ -72,7 +72,7 @@ window.onload = () => {
             },
             y: {
                 amplitude: {
-                    add: .005,
+                    add: 0,
                     multiply: 1,
                 },
                 period: {
@@ -87,8 +87,8 @@ window.onload = () => {
         },
         slow: true,
         reverse: false,
-        headstart: 140000,
-        end: 150000,
+        headstart: 33000,
+        end: 37000,
         scaleMultiplier: 2,
     };
 
