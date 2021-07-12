@@ -37,7 +37,7 @@ Animation where the x phase shifts over time, and color fades from blue to red o
 
 ## Features
 
-* Save parameters to, an load from, JSON files
+* Save parameters to, and load from, JSON files
 * Export drawings as PNGs
 * Generate drawings in realtime, adding one point at a time, starting from the beginning or choosing a later starting point
 * Show or hide x and y axes
@@ -47,5 +47,5 @@ Animation where the x phase shifts over time, and color fades from blue to red o
 
 ## To do:
 
-* I would like to implement a feature that allows for simulating harmonographs that use different types rotary motion.
+* Implement feature that allows for simulating harmonographs that use rotary motion.
 * Optimize the animator. It currently generates each frame in realtime before showing it, which can be slow for large drawings.

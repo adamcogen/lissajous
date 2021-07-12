@@ -14,7 +14,7 @@ window.onload = () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext("2d");
-    pixelSize = 2;
+    pixelSize = 3;
     let canvasXOffset = -1.5;
     let canvasYOffset = -1.5;
 
@@ -22,44 +22,42 @@ window.onload = () => {
     let xOffset = window.innerWidth / 2;
     let yOffset = window.innerHeight / 2;
 
-    const BACKGROUND_COLOR = "#000000"
+    const BACKGROUND_COLOR = "#FFFFFF"
 
     //timing variables
     let lastMilliDrawTime = 0;
     let currentMilliTime = 0;
     let millisElapsed = 0;
-    const MILLI_TIME_BETWEEN_POINTS = 0; // slow down how long we should wait between each point being drawn.
+    const MILLI_TIME_BETWEEN_POINTS = 0; // we will slow down how long we wait between each frame being drawn by this many milliseconds
 
     let showAxes = false;
 
-    let exportPngAndConfigJson = false;
-    let exported = false;
+    let exportPngAndConfigJson = true;
+    let pngExported = false;
 
-    let useJsonTextConfig = true; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
+    let useJsonTextConfig = false; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
 
     let importConfigJson = false; // if true, import configuration from a saved JSON file. this is untested but should only work if this is being run from a web server due to http security limitations with most browsers.
     let configJsonFileName = "./configurations/1.json"
-
-    let animate = true;
 
     // use this 'configuration' object declaration if 'useJsonTextConfig' and 'importConfigJson' are set to false
     let configuration = {
         equations: {
             x: {
-                period: 300,
-                amplitude: 500,
+                period: 83.5,
+                amplitude: -240,
                 phase: 0,
             },
             y: {
-                period: 300,
-                amplitude: 500,
+                period: 500,
+                amplitude: 100,
                 phase: 0,
             }
         },
         automation: {
             x: {
                 amplitude: {
-                    add: 0.001,
+                    add: 0.005,
                     multiply: 1,
                 },
                 period: {
@@ -73,7 +71,7 @@ window.onload = () => {
             },
             y: {
                 amplitude: {
-                    add: 0.001,
+                    add: 0.005,
                     multiply: 1,
                 },
                 period: {
@@ -88,8 +86,8 @@ window.onload = () => {
         },
         slow: true,
         reverse: false,
-        headstart: 33000,
-        end: 100000,
+        headstart: 50000,
+        end: 80000,
         scaleMultiplier: 2,
     };
 
@@ -116,14 +114,12 @@ window.onload = () => {
     let points = [];
     points = calculatePoints(configuration, xOffset, yOffset);
 
-    let count = 0;
+    let pointsDrawn = 0;
 
     drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
 
-    let framesSoFar = 200;
-    let variable = 1;
-    // The recursive 'update' loop that runs everything 
-    function update() {
+    let framesDrawn = 0; // a 'frame' here refers to a full lissajous pattern image, i.e. this is the number of frames in the animation so far
+    function update() { // The recursive 'update' loop that runs everything 
 
         currentMilliTime = Date.now();
         millisElapsed = currentMilliTime - lastMilliDrawTime;
@@ -142,32 +138,27 @@ window.onload = () => {
                 ctx.fillStyle = "#000000";
             }
             
-            count = 0
+            pointsDrawn = 0
             configuration = clone(initialConfiguration);
             
-            while (count < configuration.end) {
-                point = points[count];
+            while (pointsDrawn < configuration.end) {
+                point = points[pointsDrawn];
                 drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
-                count += 1;
+                pointsDrawn += 1;
             }
 
-            if (exportPngAndConfigJson && !exported) {
-                exported = true;
+            if (exportPngAndConfigJson && !pngExported) {
+                pngExported = true;
                 exportCanvasAsPNG(canvas, "animator");
             }
 
-            framesSoFar += 1;
+            framesDrawn += 1;
 
-            configuration.equations.y.phase += (1 * framesSoFar) % (configuration.equations.y.period);
-            
-            if (configuration.equations.y.phase === 0) {
-                console.log("0");
-            }
-            // console.log(configuration.equations.y.phase + " out of " + configuration.equations.y.period);
-            // configuration.equations.x.period = Math.floor(configuration.equations.y.period / variable);
-            // variable += 1;
-            // variable = variable % configuration.equations.y.period;
-            // console.log("ratio: " + variable + " to 1 "  + "x: " + configuration.equations.x.period + " y: " + configuration.equations.y.period);
+            // animation logic can go here
+            // configuration.equations.x.period += framesDrawn * 1;
+            // console.log(configuration.equations.x.period)
+            configuration.equations.x.phase += framesDrawn * 5;
+            // end animation logic
 
             points = calculatePoints(configuration, xOffset, yOffset);
             lastMilliDrawTime = Date.now();
@@ -259,7 +250,6 @@ window.onload = () => {
         return JSON.parse(JSON.stringify(object));
     }
 
-
     function confineNumberToBounds(number, lowerBound, upperBound) {
         if (number < lowerBound) {
             return lowerBound;
@@ -279,13 +269,13 @@ window.onload = () => {
 
     function calculatePoints(configuration, xOffset, yOffset) {
         // math variables
-        let count = 0;
+        let pointsCalculated = 0;
         // x
-        let x0 = 0;
-        let x1 = 0;
+        let xCounter = 0;
+        let yCounter = 0;
         // y
-        let y0 = 0;
-        let y1 = 0;
+        let x = 0;
+        let y = 0;
 
         let points = [];
 
@@ -295,16 +285,16 @@ window.onload = () => {
         configuration.equations.x.amplitude *= configuration.scaleMultiplier
         configuration.equations.y.amplitude *= configuration.scaleMultiplier
 
-        while (count < configuration.end) {
-            count += 1;
-            x0 += 1;
-            x1 += 1;
+        while (pointsCalculated < configuration.end) {
+            pointsCalculated += 1;
+            xCounter += 1;
+            yCounter += 1;
 
-            let b0 = (2 * Math.PI) / configuration.equations.x.period
-            y0 = configuration.equations.x.amplitude * Math.sin(b0 * (x0 + configuration.equations.x.phase));
+            let xFrequency = (2 * Math.PI) / configuration.equations.x.period
+            x = configuration.equations.x.amplitude * Math.sin(xFrequency * (xCounter + configuration.equations.x.phase));
 
-            let b1 = (2 * Math.PI) / configuration.equations.y.period
-            y1 = configuration.equations.y.amplitude * Math.sin(b1 * (x1 + configuration.equations.y.phase));
+            let yFrequency = (2 * Math.PI) / configuration.equations.y.period
+            y = configuration.equations.y.amplitude * Math.sin(yFrequency * (yCounter + configuration.equations.y.phase));
 
             // apply automation
             // amplitude
@@ -323,12 +313,19 @@ window.onload = () => {
             configuration.equations.x.phase *= configuration.automation.x.phase.multiply;
             configuration.equations.y.phase *= configuration.automation.y.phase.multiply;
 
-            incrementTo255 = confineNumberToBounds(Math.round((count / configuration.end) * 255), 16, 255);
-            decrementFrom255 = confineNumberToBounds(255 - Math.round((count / configuration.end) * 255), 16, 255);
+            incrementTo255 = confineNumberToBounds(Math.round((pointsCalculated / configuration.end) * 255), 16, 255);
+            decrementFrom255 = confineNumberToBounds(255 - Math.round((pointsCalculated / configuration.end) * 255), 16, 255);
 
-            color = rgbToHex(incrementTo255, 20, decrementFrom255)
+            // fade red to blue
+            // color = rgbToHex(incrementTo255, 20, decrementFrom255)
 
-            points.push({x: y0 + xOffset, y: y1 + yOffset, color: color})
+            color = "#000000"
+
+            points.push({
+                x: x + xOffset, 
+                y: y + yOffset, 
+                color: color
+            })
         }
 
         if (configuration.reverse) {

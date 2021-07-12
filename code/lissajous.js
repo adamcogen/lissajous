@@ -28,15 +28,15 @@ window.onload = () => {
     let lastMilliDrawTime = 0;
     let currentMilliTime = 0;
     let millisElapsed = 0;
-    const MILLI_TIME_BETWEEN_POINTS = 0; // slow down how long we should wait between each point being drawn.
+    const MILLI_TIME_BETWEEN_POINTS = 0; // we will slow down how long we wait between each point being drawn by this many milliseconds
 
     let showAxes = true;
     let showTrackingAnimations = false;
 
     let exportPngAndConfigJson = false;
-    let exported = false;
+    let pngExported = false;
 
-    let useJsonTextConfig = true; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
+    let useJsonTextConfig = false; // if true, use JSON text version of configuration instead of object version. makes it easier to load from exported files locally just by copying and pasting their contents.
 
     let importConfigJson = false; // if true, import configuration from a saved JSON file. this is untested but should only work if this is being run from a web server due to http security limitations with most browsers.
     let configJsonFileName = "./configurations/1.json"
@@ -113,7 +113,7 @@ window.onload = () => {
     let points = [];
     points = calculatePoints(configuration, xOffset, yOffset);
 
-    let count = 0;
+    let pointsDrawn = 0;
 
     drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
 
@@ -127,10 +127,10 @@ window.onload = () => {
         ctx.fillStyle = "#000000";
     }
 
-    while (count < configuration.headstart) {
-        point = points[count];
+    while (pointsDrawn < configuration.headstart) {
+        point = points[pointsDrawn];
         drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
-        count += 1;
+        pointsDrawn += 1;
     }
 
     // tracking lines
@@ -161,9 +161,9 @@ window.onload = () => {
         currentMilliTime = Date.now();
         millisElapsed = currentMilliTime - lastMilliDrawTime;
 
-        if (configuration.slow && count < points.length && millisElapsed >= MILLI_TIME_BETWEEN_POINTS) {
+        if (configuration.slow && pointsDrawn < points.length && millisElapsed >= MILLI_TIME_BETWEEN_POINTS) {
             // draw point
-            point = points[count];
+            point = points[pointsDrawn];
             drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
             // draw tracking points
             if (showTrackingAnimations) {
@@ -183,20 +183,20 @@ window.onload = () => {
                 yLine.vertices[1].y = point.y - yLine.translation.y;
             }
 
-            count += 1;
+            pointsDrawn += 1;
 
             lastMilliDrawTime = Date.now();
         }
         
         // redraw everything at the end, without the red axes or animated tracking shapes
-        if (!configuration.slow || count >= points.length) {
+        if (!configuration.slow || pointsDrawn >= points.length) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawCanvasRectangle(ctx, 0, 0, canvas.width, canvas.height, BACKGROUND_COLOR)
-            count = 0
-            while (count < configuration.end) {
-                point = points[count];
+            pointsDrawn = 0
+            while (pointsDrawn < configuration.end) {
+                point = points[pointsDrawn];
                 drawCanvasPixel(ctx, {x: point.x + canvasXOffset, y: point.y + canvasYOffset}, point.color);
-                count += 1;
+                pointsDrawn += 1;
             }
             if (showTrackingAnimations) {
                 xLine.stroke = 'transparent';
@@ -208,8 +208,8 @@ window.onload = () => {
                 trackingDot.fill = 'transparent';
             }
 
-            if (exportPngAndConfigJson && !exported) {
-                exported = true;
+            if (exportPngAndConfigJson && !pngExported) {
+                pngExported = true;
                 exportCanvasAsPNG(canvas, "lissajous")
             }
         }
@@ -294,13 +294,13 @@ window.onload = () => {
 
     function calculatePoints(configuration, xOffset, yOffset) {
         // math variables
-        let count = 0;
+        let pointsCalculated = 0;
         // x
-        let x0 = 0;
-        let x1 = 0;
+        let xCounter = 0;
+        let yCounter = 0;
         // y
-        let y0 = 0;
-        let y1 = 0;
+        let x = 0;
+        let y = 0;
 
         let points = [];
 
@@ -310,16 +310,16 @@ window.onload = () => {
         configuration.equations.x.amplitude *= configuration.scaleMultiplier
         configuration.equations.y.amplitude *= configuration.scaleMultiplier
 
-        while (count < configuration.end) {
-            count += 1;
-            x0 += 1;
-            x1 += 1;
+        while (pointsCalculated < configuration.end) {
+            pointsCalculated += 1;
+            xCounter += 1;
+            yCounter += 1;
 
-            let b0 = (2 * Math.PI) / configuration.equations.x.period
-            y0 = configuration.equations.x.amplitude * Math.sin(b0 * (x0 + configuration.equations.x.phase));
+            let xFrequency = (2 * Math.PI) / configuration.equations.x.period
+            x = configuration.equations.x.amplitude * Math.sin(xFrequency * (xCounter + configuration.equations.x.phase));
 
-            let b1 = (2 * Math.PI) / configuration.equations.y.period
-            y1 = configuration.equations.y.amplitude * Math.sin(b1 * (x1 + configuration.equations.y.phase));
+            let yFrequency = (2 * Math.PI) / configuration.equations.y.period
+            y = configuration.equations.y.amplitude * Math.sin(yFrequency * (yCounter + configuration.equations.y.phase));
 
             // apply automation
             // amplitude
@@ -338,7 +338,10 @@ window.onload = () => {
             configuration.equations.x.phase *= configuration.automation.x.phase.multiply;
             configuration.equations.y.phase *= configuration.automation.y.phase.multiply;
 
-            points.push({x: y0 + xOffset, y: y1 + yOffset, color: "#000000"})
+            points.push({
+                x: x + xOffset, 
+                y: y + yOffset, 
+                color: "#000000"})
         }
 
         if (configuration.reverse) {
